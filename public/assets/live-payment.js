@@ -2523,17 +2523,58 @@ var qrcode = function() {
     }
   });
 
+  const usernameInput = document.getElementById('customer-username');
+  const avatarImage = document.getElementById('roblox-avatar');
+  const accountStatus = document.getElementById('roblox-account');
+  let lookupTimer;
+  let lookupRequest;
+
+  function scheduleAvatarLookup() {
+    clearTimeout(lookupTimer);
+    lookupRequest?.abort();
+    avatarImage.hidden = true;
+    avatarImage.removeAttribute('src');
+    accountStatus.textContent = '';
+    const username = usernameInput.value.trim();
+    if (!/^[a-z0-9_]{2,20}$/i.test(username)) return;
+    lookupTimer = setTimeout(async () => {
+      const request = new AbortController();
+      lookupRequest = request;
+      accountStatus.textContent = 'Buscando conta do Roblox…';
+      try {
+        const response = await fetch('/api/roblox-avatar?username=' + encodeURIComponent(username), { signal: request.signal });
+        const account = await response.json();
+        if (request.signal.aborted) return;
+        if (!response.ok) throw new Error(account.error);
+        accountStatus.textContent = '@' + account.username;
+        if (account.avatar) {
+          avatarImage.src = account.avatar;
+          avatarImage.hidden = false;
+        }
+      } catch (error) {
+        if (!request.signal.aborted) accountStatus.textContent = 'Não foi possível buscar o avatar. Confira o usuário.';
+      }
+    }, 450);
+  }
+
+  avatarImage.addEventListener('error', () => { avatarImage.hidden = true; });
+  usernameInput.addEventListener('input', scheduleAvatarLookup);
+  scheduleAvatarLookup();
+
   checkout.onclick = async () => {
     if (!cart.length || checkout.disabled) return;
     const email = document.getElementById('customer-email').value.trim();
-    const phone = document.getElementById('customer-phone').value.replace(/\D/g, '');
+    const username = usernameInput.value.trim().toLowerCase();
+    const pending = storage.get('gamex-purin-attempt');
+    const previousOrder = pending?.sent ? JSON.parse(pending.signature || 'null') : null;
+    const legacyOrder = previousOrder?.customer?.phone ? previousOrder : null;
     const error = document.getElementById('customer-error');
-    if (!/^\S+@\S+\.\S+$/.test(email) || phone.length < 10) { error.classList.add('show'); return; }
+    if (!legacyOrder && (!/^\S+@\S+\.\S+$/.test(email) || !/^[a-z0-9_]{2,20}$/i.test(username))) { error.classList.add('show'); return; }
     error.classList.remove('show');
     checkout.disabled = true;
     checkout.textContent = 'Gerando PIX…';
     try {
-      const body = { items: cart.map(item => ({ id: item.id, qty: item.qty })).sort((a,b) => a.id.localeCompare(b.id)), coupon, customer: { email: email.toLowerCase(), phone } };
+      const body = legacyOrder || { items: cart.map(item => ({ id: item.id, qty: item.qty })).sort((a,b) => a.id.localeCompare(b.id)), coupon, customer: { email: email.toLowerCase(), username } };
       const signature = JSON.stringify(body);
       const existing = storage.get('gamex-purin-attempt');
       if (existing) attempt = existing;
@@ -2551,7 +2592,7 @@ var qrcode = function() {
         attempt.sent = recoverOnly;
         throw new Error('Permita o armazenamento do site no navegador para iniciar o Pix com segurança.');
       }
-      storage.set('gamex-contact', { email, phone });
+      if (!legacyOrder) storage.set('gamex-contact', { email, username });
       stopPolling();
       const response = await fetch('/api/create-pix', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, requestKey: attempt.requestKey, recoverOnly }), signal: AbortSignal.timeout(25000) });
       const data = await response.json();
