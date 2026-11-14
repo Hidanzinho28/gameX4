@@ -11,7 +11,7 @@ Pode manter o mesmo projeto da Vercel. Configuração: Framework Other, raiz do 
 
 SÓ É NECESSÁRIA PURINCASH_API_KEY. Não precisa cadastrar produtos no gateway, banco de dados, domínio no código ou segredo de webhook. A confirmação é consultada pela API enquanto o checkout está aberto. BUKIOPAY_API_KEY e GOATPAY_API_KEY não são usadas neste pacote.
 
-Gere sua chave em https://purincash.com/dashboard/api
+Gere sua chave em https://purin.cash/dashboardv2
 Nunca publique a chave no GitHub nem nos arquivos da pasta public.
 
 ## Conteúdo preservado
@@ -62,7 +62,7 @@ Nenhuma cobrança real foi criada, nenhuma chave foi incluída e o pacote não f
 
 ## Referências oficiais
 
-- https://docs.purincash.com/guias/autenticacao
-- https://docs.purincash.com/api-reference/cobrancas/create-charge
-- https://docs.purincash.com/api-reference/cobrancas/get-charge
-- https://docs.purincash.com/api-reference/cobrancas/list-charges
+- https://docs.purin.cash/guias/autenticacao
+- https://docs.purin.cash/api-reference/cobrancas/create-charge
+- https://docs.purin.cash/api-reference/cobrancas/get-charge
+- https://docs.purin.cash/api-reference/cobrancas/list-charges
